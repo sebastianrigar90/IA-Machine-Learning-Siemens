@@ -1,0 +1,65 @@
+24/08/2026
+30PbCdRmIxKriOWg53RWUPnWgw9Ak8dhBbq3CUID2aIeV5NayBo4JQQJ99CHACYeBjFXJ3w3AAAAACOGbKgu
+siemens-rag/
+│
+├── data/
+│   └── documentos/
+│       ├── manual_transformador.pdf
+│       └── procedimiento_mantenimiento.pdf
+│
+├── storage/
+│   ├── index.faiss
+│   └── metadata.json
+│
+├── src/
+│   ├── ingest.py
+│   ├── retrieval.py
+│   └── llm.py
+│
+├── app.py
+├── .env
+├── .env.example
+├── pyproject.toml
+└── uv.lock
+
+
+
+
+
+┌─────────────────────────────── TU PC ───────────────────────────────┐
+│                                                                     │
+│  PDF                                                                │
+│   │                                                                 │
+│   ▼                                                                 │
+│  PyMuPDF                                                            │
+│   │                                                                 │
+│   ▼                                                                 │
+│  Chunking                                                           │
+│   │                                                                 │
+│   ▼                                                                 │
+│  sentence-transformers                                              │
+│  all-MiniLM-L6-v2                                                   │
+│   │                                                                 │
+│   ▼                                                                 │
+│  FAISS + metadata.json                                              │
+│   │                                                                 │
+│   │  Pregunta                                                       │
+│   ▼                                                                 │
+│  Retrieval local                                                    │
+│   │                                                                 │
+│   │  Contexto recuperado + pregunta                                 │
+└───┼─────────────────────────────────────────────────────────────────┘
+    │
+    │ HTTPS API
+    ▼
+┌───────────────────────────────┐
+│       Azure OpenAI            │
+│                               │
+│   Solo generación del LLM     │
+└───────────────┬───────────────┘
+                │
+                ▼
+        Respuesta final
+                │
+                ▼
+         Regresa a tu PC

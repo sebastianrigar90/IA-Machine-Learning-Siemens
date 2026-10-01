@@ -1,0 +1,79 @@
+18/08/2026
+
+# Configuración IA_Siemens
+
+## 1. Crear entorno local
+
+```cmd
+cd /d "%USERPROFILE%\Desktop"
+mkdir IA_Siemens
+cd IA_Siemens
+py -3.12 -m venv venvsiemens
+venvsiemens\Scripts\activate
+```
+
+Crea un entorno virtual local, fuera de Google Drive.
+
+## 2. Actualizar pip
+
+```cmd
+python -m pip install --upgrade pip
+```
+
+## 3. Librerías base
+
+```cmd
+python -m pip install numpy pandas matplotlib opencv-python pillow
+```
+
+## 4. PyTorch + CUDA
+
+```cmd
+python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
+```
+
+Instala PyTorch con soporte CUDA para usar la GPU.
+
+## 5. Verificar GPU
+
+```cmd
+python -c "import torch; print('Torch:', torch.__version__); print('CUDA disponible:', torch.cuda.is_available()); print('CUDA:', torch.version.cuda); print('GPU:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'No detectada')"
+```
+
+## 6. Instalar Ultralytics
+
+```cmd
+python -m pip install ultralytics
+```
+
+## 7. Verificar instalación
+
+```cmd
+yolo checks
+```
+
+## 8. Prueba YOLO con GPU
+
+```cmd
+yolo predict model=yolo11n.pt source=https://ultralytics.com/images/bus.jpg device=0
+```
+
+## Resultado esperado
+
+```text
+Torch: 2.13.0+cu130
+CUDA disponible: True
+GPU: NVIDIA GeForce RTX 5060 Laptop GPU
+```
+
+YOLO debe mostrar:
+
+```text
+CUDA:0 (NVIDIA GeForce RTX 5060 Laptop GPU)
+```
+
+Los resultados quedan en:
+
+```text
+C:\Users\Usuario\Desktop\IA_Siemens\runs\detect\predict
+```

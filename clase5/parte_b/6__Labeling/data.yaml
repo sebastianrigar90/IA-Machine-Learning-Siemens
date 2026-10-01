@@ -1,0 +1,6 @@
+train: cascos_y_chalecos/train/images
+val: cascos_y_chalecos/valid/images
+test: cascos_y_chalecos/test/images
+2
+names: ['cascos', 'chalecos']
+

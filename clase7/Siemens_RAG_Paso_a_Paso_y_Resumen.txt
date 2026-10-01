@@ -1,0 +1,675 @@
+SIEMENS RAG — PASO A PASO Y RESUMEN END TO END
+=================================================
+
+Fecha: 24/08/2026
+
+Este documento resume el experimento que acabamos de completar:
+un sistema RAG local para documentación técnica de transformadores,
+utilizando FAISS para recuperación y Azure OpenAI / Microsoft Foundry
+para generar la respuesta final.
+
+=================================================
+1. OBJETIVO DEL PROYECTO
+=================================================
+
+Construir un RAG funcional de extremo a extremo:
+
+    Manuales PDF de transformadores
+                |
+                v
+         Proceso de ingesta
+                |
+                v
+   Fragmentación y embeddings locales
+                |
+                v
+          Índice FAISS local
+                |
+                v
+        Pregunta del usuario
+                |
+                v
+       Búsqueda semántica en FAISS
+                |
+                v
+      Fragmentos relevantes del manual
+                |
+                v
+ Microsoft Foundry / Azure OpenAI
+       Deployment: gpt-5.4-mini
+                |
+                v
+       Respuesta basada en contexto
+                |
+                v
+     PDF + páginas recuperadas
+
+
+=================================================
+2. CONFIGURACIÓN DE AZURE / MICROSOFT FOUNDRY
+=================================================
+
+Partimos de un recurso ya existente de Azure AI Foundry / Azure OpenAI:
+
+    Recurso:
+    rag-transformadores-2-resource
+
+Dentro de Microsoft Foundry:
+
+1. Se exploraron los modelos disponibles.
+2. Se seleccionó el modelo GPT-5.4-mini.
+3. Se realizó el deployment con configuración estándar.
+4. El modelo quedó disponible con un deployment llamado:
+
+       gpt-5.4-mini
+
+5. Se consultaron los datos de conexión:
+   - Endpoint
+   - API Key
+   - Deployment name
+
+Estos datos se utilizaron posteriormente en el archivo .env.
+
+IMPORTANTE:
+No se debe incluir la API Key directamente en el código Python.
+
+=================================================
+3. ESTRUCTURA FINAL DEL PROYECTO
+=================================================
+
+La estructura relevante quedó así:
+
+siemens-rag/
+|
+|-- .env
+|-- .env.example
+|-- .gitignore
+|-- .python-version
+|-- app.py
+|-- pyproject.toml
+|-- README.md
+|-- uv.lock
+|
+|-- data/
+|-- storage/
+|
+|-- src/
+    |
+    |-- ingest.py
+    |-- retrieval.py
+    |-- rag.py
+
+Además:
+
+    .venv/
+
+contiene el entorno virtual administrado por uv.
+
+=================================================
+4. ARCHIVOS PRINCIPALES
+=================================================
+
+src/ingest.py
+-------------
+
+Responsabilidad:
+
+- Leer los documentos PDF.
+- Extraer el contenido.
+- Dividir el contenido en fragmentos.
+- Generar embeddings.
+- Construir y guardar el índice FAISS.
+- Guardar la metadata necesaria para identificar:
+  - Documento fuente.
+  - Página.
+  - Fragmento.
+
+Es el proceso de preparación del conocimiento.
+
+Normalmente se ejecuta cuando:
+- Se agregan nuevos manuales.
+- Se modifican documentos.
+- Se desea reconstruir el índice.
+
+No es necesario ejecutarlo para cada pregunta.
+
+
+src/retrieval.py
+----------------
+
+Responsabilidad:
+
+- Cargar el modelo de embeddings.
+- Cargar el índice FAISS.
+- Recibir una pregunta.
+- Convertir la pregunta en embedding.
+- Buscar los fragmentos semánticamente más cercanos.
+- Retornar los resultados con:
+  - source
+  - page
+  - text
+  - score
+
+La interfaz utilizada por rag.py quedó conceptualmente así:
+
+    search(question, top_k=3)
+
+
+src/rag.py
+----------
+
+Responsabilidad:
+
+- Cargar las variables del archivo .env.
+- Consultar retrieval.py.
+- Recuperar los 3 fragmentos más relevantes desde FAISS.
+- Construir el contexto.
+- Enviar contexto + pregunta a Azure OpenAI.
+- Obtener la respuesta del modelo.
+- Mostrar:
+  - Respuesta.
+  - Fuentes recuperadas.
+  - Páginas.
+  - Scores/distancias.
+
+El modelo configurado fue:
+
+    gpt-5.4-mini
+
+
+.env
+----
+
+Contiene las credenciales y configuración de Azure OpenAI.
+
+La estructura utilizada es:
+
+AZURE_OPENAI_ENDPOINT=https://rag-transformadores-2-resource.openai.azure.com
+AZURE_OPENAI_API_KEY=TU_CLAVE_REAL
+AZURE_OPENAI_DEPLOYMENT=gpt-5.4-mini
+
+La clave real NO debe compartirse ni subirse a GitHub.
+
+=================================================
+5. COMANDOS REALMENTE UTILIZADOS EN ESTA SESIÓN
+=================================================
+
+IMPORTANTE:
+Esta sección contiene los comandos que realmente aparecen en el
+proceso de esta conversación y que usamos para configurar, localizar
+y ejecutar el proyecto.
+
+
+A. UBICARSE EN EL PROYECTO
+--------------------------
+
+La terminal estaba ubicada en:
+
+    C:\Users\Usuario\Desktop\IA_Siemens\clase7\siemens-rag
+
+Prompt:
+
+    PS C:\Users\Usuario\Desktop\IA_Siemens\clase7\siemens-rag>
+
+
+B. INSTALAR OPENAI Y PYTHON-DOTENV
+----------------------------------
+
+Comando utilizado:
+
+    uv add openai python-dotenv
+
+Resultado observado:
+
+    Resolved 102 packages
+    Checked 82 packages
+
+
+C. EDITAR EL ARCHIVO .env
+-------------------------
+
+Comando utilizado:
+
+    notepad .env
+
+Allí se actualizaron las variables:
+
+    AZURE_OPENAI_ENDPOINT
+    AZURE_OPENAI_API_KEY
+    AZURE_OPENAI_DEPLOYMENT
+
+
+D. VERIFICAR LA ESTRUCTURA DEL PROYECTO
+---------------------------------------
+
+Comando utilizado:
+
+    Get-ChildItem -Force
+
+Esto confirmó la presencia de elementos como:
+
+    .git
+    .venv
+    data
+    src
+    storage
+    .env
+    .env.example
+    .gitignore
+    .python-version
+    app.py
+    pyproject.toml
+    README.md
+    uv.lock
+
+
+E. PRIMER INTENTO DE EJECUTAR rag.py
+------------------------------------
+
+Inicialmente se intentó:
+
+    uv run python rag.py
+
+Resultado:
+
+    can't open file ...
+    No such file or directory
+
+La razón fue que rag.py no estaba en la raíz del proyecto.
+
+
+F. LOCALIZAR rag.py
+-------------------
+
+Comando utilizado:
+
+    Get-ChildItem -Path . -Filter rag.py -Recurse
+
+Resultado:
+
+    Directorio:
+    C:\Users\Usuario\Desktop\IA_Siemens\clase7\siemens-rag\src
+
+    rag.py
+
+Esto confirmó que el archivo estaba en:
+
+    src\rag.py
+
+
+G. EJECUTAR CORRECTAMENTE EL RAG
+--------------------------------
+
+Comando correcto utilizado:
+
+    uv run python src/rag.py
+
+Durante el primer arranque se observó:
+
+    Cargando modelo de embeddings...
+    Loading weights: 100%
+    Cargando índice FAISS...
+
+Después apareció:
+
+    RAG LOCAL PARA DOCUMENTACIÓN DE TRANSFORMADORES
+
+    Pregunta sobre el transformador:
+
+Esto confirmó que:
+- El modelo de embeddings cargó.
+- FAISS cargó.
+- La aplicación quedó lista para recibir preguntas.
+
+
+H. PRIMER ERROR DE RETRIEVAL
+----------------------------
+
+Al realizar una pregunta apareció:
+
+    TypeError: search() got an unexpected keyword argument 'k'
+
+La causa fue una diferencia entre rag.py y retrieval.py.
+
+Se tenía:
+
+    search(question, k=k)
+
+y se corrigió por:
+
+    search(question, top_k=k)
+
+porque retrieval.py esperaba el parámetro:
+
+    top_k
+
+
+I. SEGUNDO ERROR: AZURE OPENAI 404
+----------------------------------
+
+Después de corregir FAISS, el flujo llegó hasta:
+
+    Consultando Azure OpenAI...
+
+pero apareció:
+
+    NotFoundError: Error code: 404
+    Resource not found
+
+Se corrigió la configuración del cliente para utilizar la ruta
+compatible con la API Responses actual:
+
+    from openai import OpenAI
+
+y:
+
+    client = OpenAI(
+        api_key=AZURE_OPENAI_API_KEY,
+        base_url=f"{AZURE_OPENAI_ENDPOINT.rstrip('/')}/openai/v1/"
+    )
+
+La llamada quedó conceptualmente así:
+
+    response = client.responses.create(
+        model=AZURE_OPENAI_DEPLOYMENT,
+        ...
+    )
+
+Después de este cambio, la llamada a Azure OpenAI funcionó.
+
+
+J. EJECUCIÓN FINAL EXITOSA
+--------------------------
+
+Comando:
+
+    uv run python src/rag.py
+
+Pregunta utilizada:
+
+    ¿Cuál es el procedimiento recomendado para inspeccionar el transformador?
+
+El programa realizó:
+
+    Buscando información en FAISS local...
+    Consultando Azure OpenAI...
+
+Y finalmente mostró:
+
+    RESPUESTA
+
+seguido de una respuesta generada por el modelo.
+
+También mostró:
+
+    FUENTES RECUPERADAS
+
+con resultados como:
+
+    SIE_OM_TF_A6X3012222_1.pdf - Página 2
+    SIE_OM_TF_A6X3012222_1.pdf - Página 1
+    SIE_OM_TF_A6X3012222_1.pdf - Página 3
+
+
+=================================================
+6. CÓDIGO DE EJECUCIÓN ACTUAL
+=================================================
+
+Para ejecutar el RAG desde la raíz del proyecto:
+
+    uv run python src/rag.py
+
+
+=================================================
+7. FLUJO END TO END QUE FUNCIONÓ
+=================================================
+
+PASO 1 — DOCUMENTACIÓN
+----------------------
+
+Se parte de manuales técnicos de transformadores en PDF.
+
+                PDF
+                 |
+                 v
+
+
+PASO 2 — INGESTA
+----------------
+
+ingest.py procesa los documentos.
+
+Funciones principales:
+
+- Lectura.
+- Extracción.
+- Fragmentación.
+- Preparación de metadata.
+
+                 |
+                 v
+
+
+PASO 3 — EMBEDDINGS
+-------------------
+
+Cada fragmento se representa mediante un vector numérico usando
+un modelo de sentence-transformers.
+
+    Fragmento de texto
+            |
+            v
+        Embedding
+            |
+            v
+
+
+PASO 4 — FAISS
+--------------
+
+Los vectores se almacenan en un índice FAISS local.
+
+Esto permite realizar búsqueda semántica eficiente:
+
+    Pregunta:
+    "¿Cómo inspeccionar el transformador?"
+
+No es necesario que la pregunta use exactamente las mismas palabras
+que el documento.
+
+                 |
+                 v
+
+
+PASO 5 — RETRIEVAL
+------------------
+
+retrieval.py:
+
+1. Convierte la pregunta en embedding.
+2. Busca los vectores más cercanos.
+3. Recupera top_k = 3 fragmentos.
+4. Retorna documento, página, texto y score.
+
+                 |
+                 v
+
+
+PASO 6 — CONSTRUCCIÓN DEL CONTEXTO
+----------------------------------
+
+rag.py construye un bloque similar a:
+
+    [DOCUMENTO 1]
+    Fuente: archivo.pdf
+    Página: X
+
+    Texto recuperado...
+
+    [DOCUMENTO 2]
+    Fuente: archivo.pdf
+    Página: Y
+
+    Texto recuperado...
+
+                 |
+                 v
+
+
+PASO 7 — AZURE OPENAI / MICROSOFT FOUNDRY
+-----------------------------------------
+
+El contexto recuperado y la pregunta del usuario se envían al
+deployment:
+
+    gpt-5.4-mini
+
+a través de:
+
+    client.responses.create(...)
+
+
+El prompt de instrucciones restringe el comportamiento del modelo:
+
+- Responder usando únicamente el contexto recuperado.
+- No inventar información.
+- Indicar cuando la información no está disponible.
+- Generar una respuesta técnica y concisa.
+
+                 |
+                 v
+
+
+PASO 8 — RESPUESTA FINAL
+------------------------
+
+El usuario recibe:
+
+1. Respuesta generada.
+2. Fuentes recuperadas.
+3. Páginas.
+4. Scores.
+
+Ejemplo del resultado conseguido:
+
+    Pregunta
+        |
+        v
+    FAISS local
+        |
+        v
+    Fragmentos relevantes del manual
+        |
+        v
+    Azure OpenAI / gpt-5.4-mini
+        |
+        v
+    Respuesta
+        +
+    PDF y páginas recuperadas
+
+
+=================================================
+8. QUÉ DEMOSTRAMOS CON EL EXPERIMENTO
+=================================================
+
+El proyecto demuestra una arquitectura RAG híbrida:
+
+    LOCAL
+    -----
+    - Documentos.
+    - Embeddings.
+    - FAISS.
+    - Retrieval.
+
+    CLOUD / AZURE
+    ------------
+    - Microsoft Foundry.
+    - Azure OpenAI.
+    - Modelo gpt-5.4-mini.
+
+Por tanto, no se envía el manual completo al LLM en cada pregunta.
+
+El proceso es:
+
+    Recuperar solo los fragmentos relevantes
+                    +
+    Enviar esos fragmentos al modelo
+                    =
+    Generar una respuesta contextualizada
+
+
+Esto aporta:
+
+- Menor volumen de contexto.
+- Mayor trazabilidad.
+- Posibilidad de actualizar el conocimiento sin reentrenar el LLM.
+- Separación entre conocimiento y generación.
+- Control sobre las fuentes utilizadas.
+- Uso de un modelo administrado en Azure.
+
+
+=================================================
+9. ESTADO ACTUAL DEL PROYECTO
+=================================================
+
+ESTADO: FUNCIONAL
+
+Verificado:
+
+[X] Modelo desplegado en Microsoft Foundry.
+[X] Endpoint configurado.
+[X] API Key configurada mediante .env.
+[X] Cliente OpenAI configurado.
+[X] Modelo de embeddings cargando.
+[X] Índice FAISS cargando.
+[X] Búsqueda semántica funcionando.
+[X] Recuperación de fragmentos funcionando.
+[X] Consulta a Azure OpenAI funcionando.
+[X] Respuesta generada correctamente.
+[X] Fuentes y páginas mostradas.
+
+La ejecución end-to-end fue completada exitosamente.
+
+
+=================================================
+10. SIGUIENTES EVOLUCIONES POSIBLES
+=================================================
+
+La versión actual es una prueba funcional y educativa.
+
+Posibles siguientes pasos:
+
+1. Hacer una interfaz con Streamlit.
+2. Permitir múltiples preguntas en una misma sesión.
+3. Mostrar las fuentes con enlaces o citas más visibles.
+4. Mostrar los fragmentos recuperados antes de llamar al LLM.
+5. Agregar varios manuales de transformadores.
+6. Implementar filtros por documento, modelo o fabricante.
+7. Mejorar el chunking.
+8. Evaluar calidad de retrieval.
+9. Implementar reranking.
+10. Migrar FAISS local a Azure AI Search.
+11. Desplegar una API con FastAPI.
+12. Contenerizar la aplicación con Docker.
+13. Incorporar autenticación y secretos administrados.
+14. Añadir observabilidad y evaluación del RAG.
+
+
+=================================================
+COMANDO PRINCIPAL FINAL
+=================================================
+
+Desde:
+
+    C:\Users\Usuario\Desktop\IA_Siemens\clase7\siemens-rag
+
+Ejecutar:
+
+    uv run python src/rag.py
+
+Luego escribir una pregunta sobre los manuales de transformadores.
+
+=================================================
+FIN
+=================================================

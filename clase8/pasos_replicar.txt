@@ -1,0 +1,50 @@
+cd $HOME\Desktop
+
+mkdir siemens-rag
+
+cd siemens-rag
+
+python --version
+
+winget install --id=astral-sh.uv -e
+
+uv --version
+
+uv init
+
+Get-ChildItem -Force
+
+uv add faiss-cpu numpy pypdf sentence-transformers
+
+uv add openai python-dotenv
+
+Copy-Item .env.example .env
+
+Get-ChildItem -Force
+
+notepad .env
+
+Get-ChildItem .\data
+
+Get-ChildItem .\data\documentos
+
+uv run python src/ingest.py
+
+uv add pymupdf
+
+uv run python src/ingest.py
+
+uv run python src/rag.py
+
+¿Cuál es el procedimiento recomendado para inspeccionar el transformador?
+
+¿Cuál es la capital de Colombia?
+
+
+
+
+30/08/2026
+
+uv add python-docx openpyxl
+
+uv run streamlit run src/app.py

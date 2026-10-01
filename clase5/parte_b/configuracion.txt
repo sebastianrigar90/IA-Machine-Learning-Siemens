@@ -1,0 +1,8 @@
+python --version
+pip --version
+
+python -m venv yolovenv
+yolovenv\Scripts\activate
+
+pip install mediapipe==0.10.14
+python -c "import cv2; import mediapipe as mp; print('OK')"
